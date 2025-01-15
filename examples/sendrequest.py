@@ -30,7 +30,7 @@ request2 = {
         "Origin": "https://hq.sinajs.cn",
     },
     "type": "requests",
-    "Bridge": "wss://bridge.duozhutuan.com",
+    "Bridge": "ws://localhost:8088/cacherelay",
     "clientId": "",
 }
 

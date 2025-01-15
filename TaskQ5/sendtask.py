@@ -43,7 +43,6 @@ def send_task(content):
     # Add identifier
     identifier = str(int(datetime.now().timestamp()))
     tags1 = copy.deepcopy(TAGS) # Deep copy
-    tags1[0][1] = identifier
     tags1.append(["published_at", identifier])
 
     msg = {
@@ -56,14 +55,12 @@ def send_task(content):
     
     return e 
 
-def update_task(content, event_id, identifier, pubkey):
+def update_task(task_event,pubkey):
     try:
-     if content.get('status') != 'done':
         # Update new status
+        content = json.loads(task_event.content)
         n_event = {}
-        tags1 = copy.deepcopy(TAGS)  # Deep copy
-        tags1[0][1] = identifier
-        tags1.append(["published_at", identifier])
+        tags1 = copy.deepcopy(task_event.tags)  # Deep copy
         content['status'] = 'done'
         content['taskFinisher_pubkey'] = pubkey
         n_event["content"] = json.dumps(content)
@@ -74,9 +71,21 @@ def update_task(content, event_id, identifier, pubkey):
         # Delete old task
         h_event = {}
         h_event["kind"] = 5
-        h_event["tags"] = [['e', event_id], ['k', '42']]
+        h_event["tags"] = [['e', task_event.id], ['k', '42']]
         h_event["content"] = "task done"
         r.publish(h_event)
     except Exception as e:
             traceback.print_exc()
 
+def subscribe(task_event,bridge,finish_task):
+    r1 = RelayPool([bridge],pkey)
+
+    r1.connect(1)
+    filters = {"kinds":[10010],"#e":[task_event.id]}
+    subs = r1.subscribe(filters)
+    def h1(e):
+        update_task(task_event,e['pubkey'])
+        finish_task(e)
+        subs.close()
+    subs.on("EVENT",h1)
+ 

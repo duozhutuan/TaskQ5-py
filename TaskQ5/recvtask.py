@@ -33,6 +33,12 @@ def time_since(created_at):
     print(f"New event publish at {days}天 {hours % 24}小时 {minutes % 60}分钟 {seconds % 60}秒 之前")
 
 
+def publish(event,resp,pkey):
+    content = json.loads(event['content'])    
+    r1 = RelayPool([content['Bridge']],pkey)
+    r1.connect(1)
+    r1.publish({'kind':10010,"content":resp,"tags":[ ["e",event["id"]] ]})
+
 def recv_task(eventid,handlerEvent):
 
     filters = {"kinds":[42],"#e":[eventid],"limit":30}
