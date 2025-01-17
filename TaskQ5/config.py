@@ -14,10 +14,8 @@ relayServer =  [
   'wss://relay2.nostrchat.io',
   'wss://purplerelay.com/',
   'wss://relay.damus.io',
-  'wss://strfry.iris.to',
   'wss://nos.lol',
-  'wss://nostr.tbai.me:592/',
-
+  'wss://nostr.tbai.me:592',
 ];
 
 bridge = "wss://bridge.duozhutuan.com/";

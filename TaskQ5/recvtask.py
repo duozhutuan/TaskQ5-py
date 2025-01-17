@@ -6,19 +6,8 @@ from nostrclient.log import log
 import json
 import threading
 import traceback
-
 r = RelayPool(relays)
-
-
 r.connect(0)
-
-# wait for anyone server connect success
-connected = False
-while connected == False:
-    for r1 in r.RelayList:
-        if r1.connected == True:
-            connected = True
-    time.sleep(0.1)
 
 
 def time_since(created_at):
@@ -32,18 +21,24 @@ def time_since(created_at):
 
     print(f"New event publish at {days}天 {hours % 24}小时 {minutes % 60}分钟 {seconds % 60}秒 之前")
 
-
+lock = threading.Lock()
 bridge_pool = {}
 def publish(event,resp,pkey):
     global bridge_pool
-    if len(bridge_pool) >= 10:
-        bridge_pool = {}
     content = json.loads(event['content'])
-    r1 = bridge_pool.get(content['Bridge'])    
-    if r1 == None:
-        r1 = RelayPool([content['Bridge']],pkey)
-        r1.connect(5)
-        bridge_pool[content['Bridge']] = r1
+    bridge = content['Bridge']
+    if isinstance(bridge, str):
+        bridge = [bridge]
+
+    with lock:
+      if len(bridge_pool) >= 10:
+        bridge_pool = {}
+
+      r1 = bridge_pool.get(str(bridge))    
+      if r1 == None:
+         r1 = RelayPool(bridge,pkey)
+         r1.connect(5)
+         bridge_pool[str(bridge)] = r1
         
     r1.publish({'kind':10010,"content":resp,"tags":[ ["e",event["id"]] ]})
 

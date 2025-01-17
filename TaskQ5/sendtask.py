@@ -10,6 +10,7 @@ from nostrclient.localStorage import local_storage
 from nostrclient.relay_pool import RelayPool
 import time
 import traceback
+import threading
 
 # Constants
 KIND = 42
@@ -28,15 +29,6 @@ print("Your public key bech32: ",pkey.public_key.bech32())
 r = RelayPool(relays,pkey)
 
 r.connect(0)
-
-# wait for anyone server connect success
-connected = False
-while connected == False:
-    for r1 in r.RelayList:
-        if r1.connected == True:
-            connected = True
-    time.sleep(0.1)
-
 
 
 def send_task(content):
@@ -76,11 +68,19 @@ def update_task(task_event,pubkey):
         r.publish(h_event)
     except Exception as e:
             traceback.print_exc()
-
+lock = threading.Lock()
+bridge_pool = {}
 def subscribe(task_event,bridge,finish_task):
-    r1 = RelayPool([bridge],pkey)
+    if isinstance(bridge, str):
+        bridge = [bridge]
 
-    r1.connect(1)
+    with lock:
+        r1 = bridge_pool.get(str(bridge))
+        if r1 == None:
+            r1 = RelayPool(bridge,pkey)
+            r1.connect(0)
+            bridge_pool[str(bridge)] = r1
+
     filters = {"kinds":[10010],"#e":[task_event.id]}
     subs = r1.subscribe(filters)
     def h1(e):
@@ -88,4 +88,4 @@ def subscribe(task_event,bridge,finish_task):
         finish_task(e)
         subs.close()
     subs.on("EVENT",h1)
- 
+
